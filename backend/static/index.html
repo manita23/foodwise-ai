@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>FoodWise AI — Kitchen Intelligence</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0f172a;--surface:#1e293b;--surface2:#273548;--border:#334155;
+  --text:#f1f5f9;--muted:#94a3b8;--accent:#3b82f6;--accent2:#6366f1;
+  --green:#22c55e;--red:#ef4444;--amber:#f59e0b;--purple:#a855f7;
+  --card-h:140px;--nav-w:220px;--header-h:56px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;overflow-x:hidden}
+
+/* ── HEADER ── */
+header{height:var(--header-h);background:linear-gradient(90deg,#1e3a8a,#312e81);display:flex;align-items:center;padding:0 24px;gap:14px;border-bottom:1px solid #1e40af;position:sticky;top:0;z-index:100;box-shadow:0 4px 24px #0008}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,#3b82f6,#6366f1);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 2px 8px #3b82f655}
+.logo h1{font-size:17px;font-weight:700;letter-spacing:-.3px}
+.logo h1 span{color:#93c5fd}
+.header-sub{font-size:11px;color:#93c5fd;background:#1e40af44;padding:2px 10px;border-radius:99px;border:1px solid #3b82f633}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.mode-pill{font-size:11px;padding:3px 10px;border-radius:99px;font-weight:600;cursor:default}
+.mode-pill.mock{background:#1e3a8a;color:#93c5fd;border:1px solid #3b82f6}
+.mode-pill.real{background:#14532d;color:#86efac;border:1px solid #22c55e}
+.clock{font-size:12px;color:#64748b;font-variant-numeric:tabular-nums}
+#alertBanner{display:none;background:linear-gradient(90deg,#7f1d1d,#991b1b);color:#fecaca;padding:7px 24px;font-size:12px;font-weight:500;text-align:center;border-bottom:1px solid #dc2626}
+
+/* ── LAYOUT ── */
+.layout{display:flex;height:calc(100vh - var(--header-h));overflow:hidden}
+
+/* ── SIDEBAR ── */
+nav{width:var(--nav-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.nav-section{padding:16px 12px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#475569}
+nav a{display:flex;align-items:center;gap:10px;margin:1px 8px;padding:9px 12px;border-radius:8px;font-size:13px;color:var(--muted);text-decoration:none;cursor:pointer;transition:all .15s}
+nav a:hover{background:var(--surface2);color:var(--text)}
+nav a.active{background:linear-gradient(90deg,#1e3a8a44,#312e8122);color:#93c5fd;font-weight:600;box-shadow:inset 2px 0 0 #3b82f6}
+nav a .icon{width:18px;text-align:center;font-size:15px}
+nav a .badge-dot{margin-left:auto;background:#f59e0b;color:#1c1917;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;min-width:18px;text-align:center}
+.nav-footer{margin-top:auto;padding:12px;border-top:1px solid var(--border)}
+.nav-footer p{font-size:10px;color:#475569;text-align:center;line-height:1.6}
+
+/* ── MAIN ── */
+main{flex:1;overflow-y:auto;background:var(--bg)}
+.page{display:none;padding:24px;animation:fadein .2s ease}
+.page.active{display:block}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ── PAGE HEADER ── */
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:12px}
+.ph-left h2{font-size:20px;font-weight:700;letter-spacing:-.3px}
+.ph-left p{font-size:12px;color:var(--muted);margin-top:3px}
+.ph-right{display:flex;gap:8px;align-items:center;flex-shrink:0}
+
+/* ── STAT CARDS ── */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:14px;margin-bottom:20px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;position:relative;overflow:hidden;transition:transform .15s,box-shadow .15s}
+.card:hover{transform:translateY(-2px);box-shadow:0 8px 32px #0006}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:14px 14px 0 0}
+.card.blue::before{background:linear-gradient(90deg,#3b82f6,#6366f1)}
+.card.green::before{background:linear-gradient(90deg,#22c55e,#16a34a)}
+.card.red::before{background:linear-gradient(90deg,#ef4444,#dc2626)}
+.card.amber::before{background:linear-gradient(90deg,#f59e0b,#d97706)}
+.card.purple::before{background:linear-gradient(90deg,#a855f7,#7c3aed)}
+.card-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:12px}
+.card.blue .card-icon{background:#1e3a8a55}
+.card.green .card-icon{background:#14532d55}
+.card.red .card-icon{background:#7f1d1d55}
+.card.amber .card-icon{background:#78350f55}
+.card.purple .card-icon{background:#4c1d9555}
+.card label{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:600}
+.card .val{font-size:26px;font-weight:800;margin:6px 0 4px;letter-spacing:-.5px}
+.card .sub{font-size:11px;color:#64748b}
+.card.alert-red{border-color:#ef4444;box-shadow:0 0 0 1px #ef444433}
+.card.alert-red .val{color:#ef4444}
+
+/* ── BOXES ── */
+.box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:16px}
+.box-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.box-header h3{font-size:13px;font-weight:600;color:var(--muted)}
+.box-header .box-actions{display:flex;gap:8px}
+.chart-wrap{position:relative;height:230px}
+.chart-wrap-sm{position:relative;height:180px}
+
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;padding:9px 14px;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#64748b;font-weight:700;border-bottom:1px solid var(--border)}
+.tbl td{padding:10px 14px;border-bottom:1px solid #1e293b}
+.tbl tr:hover td{background:#ffffff08}
+.tbl tr:last-child td{border-bottom:none}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600}
+.badge.pending{background:#78350f33;color:#fbbf24;border:1px solid #92400e}
+.badge.approved{background:#14532d33;color:#4ade80;border:1px solid #166534}
+.badge.rejected{background:#7f1d1d33;color:#fca5a5;border:1px solid #991b1b}
+.badge.mock{background:#1e3a8a33;color:#93c5fd;border:1px solid #1e40af}
+.badge.real{background:#14532d33;color:#86efac;border:1px solid #166534}
+.badge.info{background:#1e293b;color:#94a3b8;border:1px solid #334155}
+
+/* ── FORMS ── */
+select,input,textarea{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--text);outline:none;width:100%;transition:border .15s}
+select:focus,input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px #3b82f622}
+select option{background:#1e293b}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.3px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;letter-spacing:.1px}
+.btn-primary{background:linear-gradient(135deg,#2563eb,#4f46e5);color:#fff;box-shadow:0 2px 8px #3b82f644}
+.btn-primary:hover{background:linear-gradient(135deg,#1d4ed8,#4338ca);box-shadow:0 4px 16px #3b82f655}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+.btn-success{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff}
+.btn-success:hover{background:linear-gradient(135deg,#15803d,#166534)}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--surface2);color:var(--text)}
+.btn-danger{background:#7f1d1d33;color:#fca5a5;border:1px solid #991b1b}
+.btn-danger:hover{background:#991b1b55}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:6px}
+.btn-xs{padding:3px 9px;font-size:11px;border-radius:5px}
+
+/* ── AI Q&A ── */
+.qa-bubble{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;line-height:1.75;white-space:pre-wrap;font-size:13px;position:relative}
+.qa-bubble.user{border-color:#1e40af;background:#1e3a8a22}
+.qa-bubble.ai{border-color:#312e81;background:#1e1b4b22}
+.qa-role{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.qa-role.user{color:#60a5fa}
+.qa-role.ai{color:#818cf8}
+.rec-block{background:#78350f22;border:1px solid #92400e;border-radius:8px;padding:12px 14px;margin-top:10px;font-family:'Courier New',monospace;font-size:12px;color:#fbbf24;line-height:1.6}
+.rec-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#f59e0b;margin-bottom:6px}
+.sources-row{font-size:11px;color:#64748b;margin-top:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.qa-history{max-height:460px;overflow-y:auto;padding-right:4px;margin-bottom:12px}
+.qa-history::-webkit-scrollbar{width:4px}
+.qa-history::-webkit-scrollbar-track{background:transparent}
+.qa-history::-webkit-scrollbar-thumb{background:#334155;border-radius:4px}
+.qa-input-area{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:flex-end}
+.qa-input-area textarea{background:transparent;border:none;padding:0;font-size:13px;resize:none;flex:1;max-height:120px;color:var(--text)}
+.qa-input-area textarea:focus{box-shadow:none}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.chip{padding:5px 14px;border-radius:99px;font-size:12px;border:1px solid var(--border);cursor:pointer;background:var(--surface);color:var(--muted);transition:all .15s}
+.chip:hover{border-color:#3b82f6;color:#93c5fd;background:#1e3a8a22}
+
+/* ── APPROVAL CARDS ── */
+.rec-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;transition:border-color .15s}
+.rec-card:hover{border-color:#334155}
+.rec-card.pending{border-left:3px solid #f59e0b}
+.rec-card.approved{border-left:3px solid #22c55e}
+.rec-card.rejected{border-left:3px solid #ef4444;opacity:.7}
+
+/* ── UPLOAD ── */
+.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:all .2s}
+.upload-zone:hover,.upload-zone.drag{border-color:#3b82f6;background:#1e3a8a11}
+.upload-zone p{color:var(--muted);font-size:13px;margin-top:8px}
+.upload-zone .icon{font-size:28px;margin-bottom:4px}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:24px;background:#1e293b;color:var(--text);padding:12px 20px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .3s,transform .3s;transform:translateY(8px);pointer-events:none;z-index:9999;border:1px solid var(--border);display:flex;align-items:center;gap:8px;max-width:320px}
+.toast.show{opacity:1;transform:none}
+.toast.success{border-color:#22c55e;background:#14532d33}
+.toast.error{border-color:#ef4444;background:#7f1d1d33}
+
+/* ── MISC ── */
+.empty{text-align:center;padding:40px;color:#475569;font-size:13px}
+.empty p{margin-top:8px;font-size:12px;color:#334155}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #334155;border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.divider{height:1px;background:var(--border);margin:12px 0}
+.last-updated{font-size:11px;color:#475569}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.two-col{grid-template-columns:1fr}}
+.tag-filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.tag-filter span{padding:5px 14px;border-radius:8px;font-size:12px;font-weight:500;border:1px solid var(--border);cursor:pointer;color:var(--muted);transition:all .15s}
+.tag-filter span:hover{border-color:#3b82f6;color:#93c5fd}
+.tag-filter span.active{background:#1e3a8a;color:#93c5fd;border-color:#3b82f6}
+.ai-domain-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;gap:14px;align-items:flex-start;transition:border-color .2s,transform .15s}
+.ai-domain-card:hover{border-color:#4f46e5;transform:translateY(-2px)}
+.ai-domain-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.ai-domain-card h4{font-size:13px;font-weight:600;margin-bottom:4px}
+.ai-domain-card p{font-size:12px;color:var(--muted);line-height:1.5}
+.progress-bar-wrap{background:#1e293b;border-radius:99px;height:6px;overflow:hidden;margin-top:8px}
+.progress-bar{height:100%;border-radius:99px;transition:width .6s ease}
+</style>
+</head>
+<body>
+
+<div id="alertBanner">⚠️ Food waste exceeded the 10% threshold today — review preparation quantities immediately.</div>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🍽️</div>
+    <h1>FoodWise <span>AI</span></h1>
+  </div>
+  <span class="header-sub">powered by IBM Granite · watsonx.ai</span>
+  <div class="header-right">
+    <span class="clock" id="clockEl"></span>
+    <span class="mode-pill mock" id="modeTag">mock mode</span>
+  </div>
+</header>
+
+<div class="layout">
+  <nav>
+    <div class="nav-section">Overview</div>
+    <a onclick="show('dashboard')" class="active" id="nav-dashboard"><span class="icon">📊</span>Dashboard</a>
+
+    <div class="nav-section">AI Analytics</div>
+    <a onclick="show('forecast')"  id="nav-forecast"><span class="icon">📈</span>Demand Forecast</a>
+    <a onclick="show('waste')"     id="nav-waste"><span class="icon">🗑️</span>Waste Tracking</a>
+    <a onclick="show('ai')"        id="nav-ai"><span class="icon">🤖</span>AI Domains</a>
+
+    <div class="nav-section">Intelligence</div>
+    <a onclick="show('qa')"        id="nav-qa"><span class="icon">💬</span>Ask IBM Granite</a>
+    <a onclick="show('approvals')" id="nav-approvals"><span class="icon">✅</span>Approvals <span class="badge-dot" id="pendingBadge" style="display:none">0</span></a>
+
+    <div class="nav-section">Data</div>
+    <a onclick="show('import')"    id="nav-import"><span class="icon">📂</span>Import Data</a>
+    <a onclick="show('settings')"  id="nav-settings"><span class="icon">⚙️</span>Settings</a>
+
+    <div class="nav-footer">
+      <p>FoodWise AI v0.1<br>IBM Granite · watsonx.ai<br><span id="lastUpdated" class="last-updated"></span></p>
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- ═══════════ DASHBOARD ═══════════ -->
+    <div class="page active" id="page-dashboard">
+      <div class="ph">
+        <div class="ph-left">
+          <h2>Kitchen Dashboard</h2>
+          <p>Real-time overview of food consumption, waste and AI forecasts</p>
+        </div>
+        <div class="ph-right">
+          <button class="btn btn-ghost btn-sm" onclick="loadDashboard()">↻ Refresh</button>
+        </div>
+      </div>
+
+      <div class="cards" id="dashCards">
+        <div class="card blue"><div class="card-icon">📈</div><label>Next Meal Forecast</label><div class="val" id="d-next">—</div><div class="sub" id="d-next-sub">IBM Granite TTM · lunch</div></div>
+        <div class="card red"  id="wasteCard"><div class="card-icon">🗑️</div><label>7-day Total Waste</label><div class="val" id="d-waste">—</div><div class="sub">kg recorded</div></div>
+        <div class="card amber"><div class="card-icon">📉</div><label>Avg Waste %</label><div class="val" id="d-pct">—</div><div class="sub">of food prepared</div></div>
+        <div class="card purple"><div class="card-icon">✅</div><label>Pending Approvals</label><div class="val" id="d-pending">—</div><div class="sub">AI recommendations</div></div>
+      </div>
+
+      <div class="two-col">
+        <div class="box">
+          <div class="box-header">
+            <h3>📊 Waste vs Consumption — 7 days</h3>
+          </div>
+          <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+        </div>
+        <div class="box">
+          <div class="box-header">
+            <h3>📈 Demand Forecast — next 3 meals (IBM Granite TTM)</h3>
+          </div>
+          <div class="chart-wrap"><canvas id="fcChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="box">
+          <div class="box-header"><h3>🥧 Waste by Category</h3></div>
+          <div class="chart-wrap-sm"><canvas id="donutChart"></canvas></div>
+        </div>
+        <div class="box">
+          <div class="box-header"><h3>🔥 Top Wasted Items</h3></div>
+          <div id="topWasteList"><div class="empty">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ FORECAST ═══════════ -->
+    <div class="page" id="page-forecast">
+      <div class="ph">
+        <div class="ph-left"><h2>Demand Forecast</h2><p>IBM Granite TTM (Tiny Time Mixers) · zero-shot multivariate forecasting</p></div>
+      </div>
+
+      <div class="box">
+        <div class="row" style="margin-bottom:16px">
+          <div class="field"><label>Meal type</label>
+            <select id="fc-type" style="width:150px">
+              <option>breakfast</option><option selected>lunch</option><option>dinner</option><option>snack</option>
+            </select>
+          </div>
+          <div class="field"><label>Item (optional)</label>
+            <input id="fc-item" placeholder="all items" style="width:150px"/>
+          </div>
+          <div class="field"><label>Horizon (meals)</label>
+            <input id="fc-horizon" type="number" min="1" max="10" value="5" style="width:90px"/>
+          </div>
+          <button class="btn btn-primary" onclick="runForecast()" id="fc-btn">
+            <span>▶</span> Run Forecast
+          </button>
+        </div>
+        <div id="fc-result"></div>
+      </div>
+
+      <div class="box" style="background:#1e1b4b22;border-color:#312e81">
+        <div class="box-header"><h3 style="color:#818cf8">🤖 How IBM Granite TTM works</h3></div>
+        <div style="font-size:12px;color:#94a3b8;line-height:1.8">
+          <p>FoodWise AI uses <strong style="color:#a5b4fc">IBM Granite Tiny Time Mixers (TTM)</strong> — a family of compact, pre-trained models for multivariate time-series forecasting from IBM Research. Available via the <strong style="color:#a5b4fc">watsonx.ai Forecast API</strong>.</p>
+          <br>
+          <p>• <strong style="color:#c7d2fe">Model:</strong> <code style="background:#1e293b;padding:1px 6px;border-radius:4px">ibm/granite-ttm-512-96-r2</code> — requires 512 historical data points, generates a 96-point forecast horizon</p>
+          <p>• <strong style="color:#c7d2fe">Zero-shot:</strong> no fine-tuning required — runs directly on your consumption history</p>
+          <p>• <strong style="color:#c7d2fe">Multivariate:</strong> can forecast multiple food items simultaneously using correlated patterns</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ WASTE ═══════════ -->
+    <div class="page" id="page-waste">
+      <div class="ph">
+        <div class="ph-left"><h2>Waste Tracking</h2><p>Record, analyse and trend institutional food waste</p></div>
+      </div>
+
+      <div class="two-col">
+        <div class="box">
+          <div class="box-header"><h3>📉 14-day Waste Trend (kg)</h3></div>
+          <div class="chart-wrap"><canvas id="wasteChart"></canvas></div>
+        </div>
+        <div class="box">
+          <div class="box-header"><h3>🥧 Waste Category Breakdown</h3></div>
+          <div class="chart-wrap"><canvas id="wasteCatChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="box">
+        <div class="box-header"><h3>➕ Record Waste</h3></div>
+        <div class="row">
+          <div class="field"><label>Meal</label>
+            <select id="w-meal" style="width:210px"><option value="">Select meal…</option></select>
+          </div>
+          <div class="field"><label>Item name</label>
+            <input id="w-item" placeholder="e.g. rice" style="width:130px"/>
+          </div>
+          <div class="field"><label>Waste (kg)</label>
+            <input id="w-kg" type="number" step="0.1" min="0" style="width:90px"/>
+          </div>
+          <div class="field"><label>Category</label>
+            <select id="w-cat" style="width:170px">
+              <option>plate_waste</option><option>preparation_waste</option>
+              <option>storage_loss</option><option>spoilage</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="recordWaste()">Save Record</button>
+        </div>
+        <div id="w-msg" style="font-size:12px;color:#4ade80;margin-top:6px"></div>
+      </div>
+
+      <div class="box">
+        <div class="box-header">
+          <h3>📋 Recent Records (last 30 days)</h3>
+          <button class="btn btn-ghost btn-sm" onclick="loadWastePage()">↻ Refresh</button>
+        </div>
+        <div id="wasteTable"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- ═══════════ AI DOMAINS ═══════════ -->
+    <div class="page" id="page-ai">
+      <div class="ph">
+        <div class="ph-left"><h2>AI Domains</h2><p>All IBM Granite capabilities integrated in FoodWise AI</p></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:20px">
+
+        <div class="ai-domain-card">
+          <div class="ai-domain-icon" style="background:#1e3a8a55">📈</div>
+          <div>
+            <h4>Time-Series Forecasting</h4>
+            <p>IBM Granite TTM (<code style="background:#0f172a;padding:1px 5px;border-radius:3px;font-size:11px">granite-ttm-512-96-r2</code>) forecasts future meal demand from historical consumption using the watsonx.ai Forecast API. Zero-shot — no training required.</p>
+            <div class="progress-bar-wrap"><div class="progress-bar" style="width:90%;background:linear-gradient(90deg,#3b82f6,#6366f1)"></div></div>
+            <p style="font-size:10px;color:#64748b;margin-top:4px">Confidence: High · API: /ml/v1/wx_data/time_series/forecast</p>
+          </div>
+        </div>
+
+        <div class="ai-domain-card">
+          <div class="ai-domain-icon" style="background:#31298155">💬</div>
+          <div>
+            <h4>Conversational Q&A</h4>
+            <p>IBM Granite 3.3 8b Instruct answers natural-language questions about food safety, waste reduction and catering policy via the watsonx.ai Chat API.</p>
+            <div class="progress-bar-wrap"><div class="progress-bar" style="width:85%;background:linear-gradient(90deg,#6366f1,#a855f7)"></div></div>
+            <p style="font-size:10px;color:#64748b;margin-top:4px">Model: granite-3-3-8b-instruct · API: /ml/v1/text/chat</p>
+          </div>
+        </div>
+
+        <div class="ai-domain-card">
+          <div class="ai-domain-icon" style="background:#14532d55">📄</div>
+          <div>
+            <h4>RAG — Policy Retrieval</h4>
+            <p>Retrieval-Augmented Generation using <code style="background:#0f172a;padding:1px 5px;border-radius:3px;font-size:11px">granite-embedding-278m-multilingual</code> embeds food-safety and catering policy documents. Answers are grounded, with source citations.</p>
+            <div class="progress-bar-wrap"><div class="progress-bar" style="width:78%;background:linear-gradient(90deg,#22c55e,#16a34a)"></div></div>
+            <p style="font-size:10px;color:#64748b;margin-top:4px">Store: Chroma (local) / Elasticsearch (prod) · API: /ml/v1/text/embeddings</p>
+          </div>
+        </div>
+
+        <div class="ai-domain-card">
+          <div class="ai-domain-icon" style="background:#78350f55">⚠️</div>
+          <div>
+            <h4>Human-in-the-Loop Oversight</h4>
+            <p>Every AI recommendation is written as a <strong>pending</strong> record. No kitchen action is taken automatically. A human administrator must approve or reject each recommendation before it takes effect.</p>
+            <div class="progress-bar-wrap"><div class="progress-bar" style="width:100%;background:linear-gradient(90deg,#f59e0b,#d97706)"></div></div>
+            <p style="font-size:10px;color:#64748b;margin-top:4px">Enforced at: Approval Queue · Status: pending → approved/rejected</p>
+          </div>
+        </div>
+
+        <div class="ai-domain-card">
+          <div class="ai-domain-icon" style="background:#4c1d9555">🔮</div>
+          <div>
+            <h4>Surplus Estimation</h4>
+            <p>Computes predicted surplus as <code style="background:#0f172a;padding:1px 5px;border-radius:3px;font-size:11px">forecast − headcount × portion_weight</code>. Flags meals with &gt;5 kg projected surplus for proactive redistribution planning.</p>
+            <div class="progress-bar-wrap"><div class="progress-bar" style="width:82%;background:linear-gradient(90deg,#a855f7,#7c3aed)"></div></div>
+            <p style="font-size:10px;color:#64748b;margin-top:4px">Derived from Granite TTM output · displayed on Forecast page</p>
+          </div>
+        </div>
+
+        <div class="ai-domain-card">
+          <div class="ai-domain-icon" style="background:#1e3a8a55">📊</div>
+          <div>
+            <h4>Waste Trend Analysis</h4>
+            <p>Aggregates historical waste records by day and category. Detects anomalies and patterns — e.g. spoilage spikes on weekends, or plate waste trending up for a specific item.</p>
+            <div class="progress-bar-wrap"><div class="progress-bar" style="width:70%;background:linear-gradient(90deg,#0ea5e9,#3b82f6)"></div></div>
+            <p style="font-size:10px;color:#64748b;margin-top:4px">Source: PostgreSQL aggregation · Phase 2: AI anomaly detection</p>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="box" style="background:#0f172a;border-color:#1e293b">
+        <div class="box-header"><h3 style="color:#64748b">Data Flow</h3></div>
+        <div style="font-size:12px;color:#475569;font-family:'Courier New',monospace;line-height:2;padding:4px 0">
+          Kitchen Data (CSV / manual entry)<br>
+          &nbsp;&nbsp;&nbsp;→ PostgreSQL (meals · consumption · waste_records)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ ForecastingService → <span style="color:#93c5fd">watsonx.ai Forecast API</span> (Granite TTM)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ RAGRetriever → <span style="color:#a5b4fc">watsonx.ai Embeddings API</span> (Granite Embed)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ Chroma vector store → top-k chunks<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ GraniteChatService → <span style="color:#c4b5fd">watsonx.ai Chat API</span> (Granite 3.3 8b)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ Answer + RECOMMENDATION: block<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ <span style="color:#fbbf24">Approval Queue</span> (human sign-off required)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ status: approved / rejected
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ ASK AI ═══════════ -->
+    <div class="page" id="page-qa">
+      <div class="ph">
+        <div class="ph-left">
+          <h2>Ask IBM Granite</h2>
+          <p>Grounded answers from food-safety policy documents · RAG-powered · human oversight enforced</p>
+        </div>
+        <div class="ph-right">
+          <button class="btn btn-ghost btn-sm" onclick="clearChat()">🗑 Clear chat</button>
+        </div>
+      </div>
+
+      <div class="chips">
+        <span class="chip" onclick="askExample(this)">🍚 Is rice safe after 4 hours in bain-marie?</span>
+        <span class="chip" onclick="askExample(this)">📉 How can I reduce lunch waste this week?</span>
+        <span class="chip" onclick="askExample(this)">⚠️ Allergen labelling requirements</span>
+        <span class="chip" onclick="askExample(this)">🥗 Can I redistribute today's surplus food?</span>
+        <span class="chip" onclick="askExample(this)">🌡️ Safe temperature for hot holding vegetables?</span>
+      </div>
+
+      <div id="qa-history" class="qa-history"></div>
+
+      <div class="qa-input-area">
+        <textarea id="qa-input" rows="2" placeholder="Ask anything about food safety, waste reduction, or policy… (Enter to send, Shift+Enter for new line)"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendQA()}"></textarea>
+        <button class="btn btn-primary" onclick="sendQA()" id="qa-btn" style="align-self:flex-end;flex-shrink:0">
+          <span id="qa-btn-inner">Send ↵</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════════ APPROVALS ═══════════ -->
+    <div class="page" id="page-approvals">
+      <div class="ph">
+        <div class="ph-left">
+          <h2>Approval Queue</h2>
+          <p>Human oversight — every AI recommendation requires sign-off before action is taken</p>
+        </div>
+        <div class="ph-right">
+          <button class="btn btn-ghost btn-sm" onclick="loadRecs(currentRecFilter)">↻ Refresh</button>
+        </div>
+      </div>
+      <div class="tag-filter" id="recFilterRow">
+        <span class="active" onclick="filterRecs('pending',this)">⏳ Pending</span>
+        <span onclick="filterRecs('approved',this)">✅ Approved</span>
+        <span onclick="filterRecs('rejected',this)">✗ Rejected</span>
+        <span onclick="filterRecs('',this)">All</span>
+      </div>
+      <div id="recList"><div class="empty">Loading…</div></div>
+    </div>
+
+    <!-- ═══════════ IMPORT ═══════════ -->
+    <div class="page" id="page-import">
+      <div class="ph">
+        <div class="ph-left"><h2>Import Data</h2><p>Upload historical consumption CSV to populate the forecasting model</p></div>
+      </div>
+
+      <div class="box">
+        <div class="box-header"><h3>📤 Upload CSV File</h3></div>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('csvFile').click()"
+             ondragover="event.preventDefault();this.classList.add('drag')"
+             ondragleave="this.classList.remove('drag')"
+             ondrop="handleDrop(event)">
+          <div class="icon">📁</div>
+          <strong style="color:var(--text)">Click to browse or drag & drop</strong>
+          <p>Accepts .csv files · Required columns: date, meal_type, item_name, consumption_kg, headcount</p>
+        </div>
+        <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="uploadCSV(this.files[0])"/>
+        <div id="import-result" style="margin-top:12px"></div>
+      </div>
+
+      <div class="box">
+        <div class="box-header"><h3>📋 Expected CSV Format</h3></div>
+        <pre style="background:#0f172a;border-radius:8px;padding:14px;font-size:12px;color:#94a3b8;overflow-x:auto;line-height:1.7">date,meal_type,item_name,consumption_kg,headcount
+2024-01-01,lunch,rice,45.2,210
+2024-01-01,lunch,dal,22.1,210
+2024-01-01,dinner,chapati,30.0,195
+2024-01-02,breakfast,idli,28.4,180</pre>
+        <a href="/api/v1/../../../data/historical/sample_consumption.csv" style="font-size:12px;color:#60a5fa;display:block;margin-top:8px">⬇ Download sample CSV</a>
+      </div>
+    </div>
+
+    <!-- ═══════════ SETTINGS ═══════════ -->
+    <div class="page" id="page-settings">
+      <div class="ph">
+        <div class="ph-left"><h2>Settings</h2><p>Application configuration and alert thresholds</p></div>
+      </div>
+
+      <div class="box">
+        <div class="box-header"><h3>🤖 AI Configuration</h3></div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.8;margin-bottom:14px">
+          To switch from <strong style="color:#93c5fd">mock mode</strong> to real IBM Granite calls, set the following in <code style="background:#0f172a;padding:2px 8px;border-radius:4px">foodwise-ai/.env</code>:
+        </div>
+        <pre style="background:#0f172a;border-radius:8px;padding:14px;font-size:12px;color:#94a3b8;line-height:1.8">AI_MODE=real
+WATSONX_API_KEY=your-ibm-cloud-api-key
+WATSONX_PROJECT_ID=your-watsonx-project-id
+WATSONX_URL=https://us-south.ml.cloud.ibm.com
+
+# Granite models (already set to correct IDs)
+GRANITE_CHAT_MODEL=ibm/granite-3-3-8b-instruct
+GRANITE_TTM_MODEL=ibm/granite-ttm-512-96-r2
+GRANITE_EMBED_MODEL=ibm/granite-embedding-278m-multilingual</pre>
+        <p style="font-size:12px;color:#64748b;margin-top:10px">Get your API key at <a href="https://cloud.ibm.com/iam/apikeys" target="_blank" style="color:#60a5fa">cloud.ibm.com/iam/apikeys</a> · Project ID is in your watsonx.ai project URL.</p>
+      </div>
+
+      <div class="box">
+        <div class="box-header"><h3>⚠️ Alert Thresholds</h3></div>
+        <div class="row">
+          <div class="field" style="max-width:240px">
+            <label>Waste alert threshold (%)</label>
+            <input type="number" id="s-thresh" value="10" min="1" max="50" step="1"/>
+          </div>
+          <div class="field" style="max-width:240px">
+            <label>Auto-refresh interval (seconds)</label>
+            <input type="number" id="s-refresh" value="60" min="10" max="300" step="10"/>
+          </div>
+          <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+        </div>
+      </div>
+
+      <div class="box">
+        <div class="box-header"><h3>📊 System Status</h3></div>
+        <div id="sysStatus"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API='/api/v1';
+let charts={};
+let currentRecFilter='pending';
+let qaHistory=[];
+let settings_={wasteThresh:10,refreshInterval:60};
+let refreshTimer=null;
+
+// ── Clock ────────────────────────────────────────────────────
+function tickClock(){
+  const n=new Date();
+  document.getElementById('clockEl').textContent=n.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(tickClock,1000); tickClock();
+
+// ── Navigation ───────────────────────────────────────────────
+function show(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a=>a.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.getElementById('nav-'+page).classList.add('active');
+  document.title = page.charAt(0).toUpperCase()+page.slice(1)+' — FoodWise AI';
+  if(page==='waste')    loadWastePage();
+  if(page==='approvals')loadRecs(currentRecFilter);
+  if(page==='settings') loadSysStatus();
+}
+
+// ── Toast ────────────────────────────────────────────────────
+function toast(msg,type='',ms=2800){
+  const t=document.getElementById('toast');
+  t.innerHTML=(type==='success'?'✓ ':type==='error'?'✕ ':'')+msg;
+  t.className='toast show '+(type||'');
+  setTimeout(()=>t.className='toast',ms);
+}
+
+// ── API ──────────────────────────────────────────────────────
+async function get(path){const r=await fetch(API+path);return r.json();}
+async function post(path,body){
+  const r=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  return r.json();
+}
+
+// ── Chart helper ─────────────────────────────────────────────
+function mkChart(id,config){
+  if(charts[id])charts[id].destroy();
+  charts[id]=new Chart(document.getElementById(id),config);
+  return charts[id];
+}
+const gridColor='#1e293b';
+const baseOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#64748b',font:{size:11}},position:'bottom'}},scales:{x:{grid:{color:gridColor},ticks:{color:'#475569',font:{size:10}}},y:{grid:{color:gridColor},ticks:{color:'#475569',font:{size:10}}}}};
+
+// ── DASHBOARD ────────────────────────────────────────────────
+async function loadDashboard(){
+  try{
+    const[trends,fc,recs,wl]=await Promise.all([
+      get('/waste/trends?days=7'),
+      post('/forecast',{meal_type:'lunch',horizon_meals:5}),
+      get('/recommendations?status=pending'),
+      get('/waste?days=7'),
+    ]);
+
+    // mode badge
+    const mb=document.getElementById('modeTag');
+    mb.textContent=(fc.mode||'mock')+' mode';
+    mb.className='mode-pill '+(fc.mode==='real'?'real':'mock');
+
+    // stat cards
+    const tw=(trends.data||[]).reduce((s,d)=>s+d.total_waste_kg,0).toFixed(1);
+    const ap=(trends.data||[]).reduce((s,d)=>s+d.waste_pct,0);
+    const avgP=trends.data?.length?(ap/trends.data.length).toFixed(1):'—';
+    document.getElementById('d-waste').textContent=tw+' kg';
+    document.getElementById('d-pct').textContent=avgP+'%';
+    const nxt=fc.forecast?.[0];
+    document.getElementById('d-next').textContent=nxt?nxt.predicted_kg+' kg':'—';
+    document.getElementById('d-next-sub').textContent='IBM Granite TTM · '+(fc.meal_type||'lunch');
+    const pCount=Array.isArray(recs)?recs.length:0;
+    document.getElementById('d-pending').textContent=pCount;
+    updatePendingBadge(pCount);
+
+    // waste alert
+    if(parseFloat(avgP)>settings_.wasteThresh){
+      document.getElementById('alertBanner').style.display='block';
+      document.getElementById('wasteCard').classList.add('alert-red');
+    } else {
+      document.getElementById('alertBanner').style.display='none';
+      document.getElementById('wasteCard').classList.remove('alert-red');
+    }
+
+    // trend chart
+    const labels=(trends.data||[]).map(d=>d.date.slice(5));
+    mkChart('trendChart',{type:'bar',data:{labels,datasets:[
+      {label:'Consumption (kg)',data:(trends.data||[]).map(d=>d.total_consumption_kg),backgroundColor:'#3b82f688',borderRadius:5,borderSkipped:false},
+      {label:'Waste (kg)',data:(trends.data||[]).map(d=>d.total_waste_kg),backgroundColor:'#ef444488',borderRadius:5,borderSkipped:false},
+    ]},options:{...baseOpts,plugins:{...baseOpts.plugins}}});
+
+    // forecast chart
+    mkChart('fcChart',{type:'line',data:{labels:(fc.forecast||[]).map(p=>p.label),datasets:[
+      {label:'Predicted (kg)',data:(fc.forecast||[]).map(p=>p.predicted_kg),borderColor:'#6366f1',backgroundColor:'#6366f122',fill:true,tension:.4,pointRadius:5,pointBackgroundColor:'#6366f1'},
+      {label:'Surplus (kg)',data:(fc.forecast||[]).map(p=>p.surplus_kg),borderColor:'#f59e0b',borderDash:[5,3],fill:false,tension:.4,pointRadius:4,pointBackgroundColor:'#f59e0b'},
+    ]},options:{...baseOpts}});
+
+    // donut chart — category breakdown
+    const rows=Array.isArray(wl)?wl:[];
+    const catMap={};
+    rows.forEach(w=>{catMap[w.waste_category]=(catMap[w.waste_category]||0)+w.waste_kg;});
+    const catLabels=Object.keys(catMap);
+    const catVals=Object.values(catMap).map(v=>+v.toFixed(2));
+    const catColors=['#ef4444','#f59e0b','#3b82f6','#a855f7','#22c55e'];
+    if(catLabels.length){
+      mkChart('donutChart',{type:'doughnut',data:{labels:catLabels,datasets:[{data:catVals,backgroundColor:catColors.slice(0,catLabels.length),borderWidth:2,borderColor:'#1e293b'}]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{labels:{color:'#64748b',font:{size:11}},position:'bottom'}}}});
+    } else {
+      const ctx=document.getElementById('donutChart');
+      if(ctx){ctx.parentElement.innerHTML='<div class="empty">No waste data yet</div>';}
+    }
+
+    // top wasted items
+    const itemMap={};
+    rows.forEach(w=>{itemMap[w.item_name]=(itemMap[w.item_name]||0)+w.waste_kg;});
+    const sorted=Object.entries(itemMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    const max=sorted[0]?.[1]||1;
+    document.getElementById('topWasteList').innerHTML=sorted.length===0
+      ?'<div class="empty">No data</div>'
+      :sorted.map(([name,kg])=>`
+        <div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+            <span>${name}</span><span style="color:#ef4444;font-weight:600">${kg.toFixed(2)} kg</span>
+          </div>
+          <div class="progress-bar-wrap"><div class="progress-bar" style="width:${(kg/max*100).toFixed(0)}%;background:linear-gradient(90deg,#ef4444,#f59e0b)"></div></div>
+        </div>`).join('');
+
+    document.getElementById('lastUpdated').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  }catch(e){console.error(e);}
+}
+
+// ── Auto-refresh ─────────────────────────────────────────────
+function startAutoRefresh(){
+  if(refreshTimer)clearInterval(refreshTimer);
+  refreshTimer=setInterval(()=>{
+    if(document.getElementById('page-dashboard').classList.contains('active'))loadDashboard();
+  },settings_.refreshInterval*1000);
+}
+
+// ── FORECAST ─────────────────────────────────────────────────
+async function runForecast(){
+  const btn=document.getElementById('fc-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Running…';
+  const mt=document.getElementById('fc-type').value;
+  const item=document.getElementById('fc-item').value.trim()||undefined;
+  const hz=parseInt(document.getElementById('fc-horizon').value)||5;
+  const r=await post('/forecast',{meal_type:mt,horizon_meals:hz,item_name:item||null});
+  btn.disabled=false;btn.innerHTML='<span>▶</span> Run Forecast';
+  const el=document.getElementById('fc-result');
+  if(!r.forecast){el.innerHTML='<p style="color:#ef4444">Error fetching forecast.</p>';return;}
+  const labels=r.forecast.map(p=>p.label);
+  el.innerHTML=`
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <span class="badge mock">Model: ${r.model_used}</span>
+      <span class="badge info">Mode: ${r.mode}</span>
+    </div>
+    <div style="height:240px;margin-bottom:16px"><canvas id="fcPageChart"></canvas></div>
+    <table class="tbl"><thead><tr><th>Meal</th><th style="text-align:right">Predicted (kg)</th><th style="text-align:right">Surplus (kg)</th><th style="text-align:right">Status</th></tr></thead>
+    <tbody>${r.forecast.map(p=>`<tr>
+      <td style="font-weight:500">${p.label}</td>
+      <td style="text-align:right;font-weight:700">${p.predicted_kg}</td>
+      <td style="text-align:right;font-weight:700;color:${p.surplus_kg>0?'#fbbf24':'#4ade80'}">${p.surplus_kg}</td>
+      <td style="text-align:right">${p.surplus_kg>5?'<span class="badge pending">⚠ High surplus</span>':p.surplus_kg<0?'<span class="badge approved">✓ On target</span>':'<span class="badge info">Normal</span>'}</td>
+    </tr>`).join('')}</tbody></table>`;
+  setTimeout(()=>{
+    mkChart('fcPageChart',{type:'bar',data:{labels,datasets:[
+      {label:'Predicted (kg)',data:r.forecast.map(p=>p.predicted_kg),backgroundColor:'#6366f188',borderRadius:6,borderSkipped:false},
+      {label:'Surplus (kg)',data:r.forecast.map(p=>p.surplus_kg),backgroundColor:'#f59e0b88',borderRadius:6,borderSkipped:false},
+    ]},options:{...baseOpts,maintainAspectRatio:false}});
+  },50);
+}
+
+// ── WASTE PAGE ───────────────────────────────────────────────
+let wasteCatChartInst=null;
+async function loadWastePage(){
+  const[tr,wl,meals]=await Promise.all([get('/waste/trends?days=14'),get('/waste?days=30'),get('/meals')]);
+  // meal dropdown
+  document.getElementById('w-meal').innerHTML='<option value="">Select meal…</option>'+
+    (Array.isArray(meals)?meals:[]).slice(0,40).map(m=>`<option value="${m.id}">${m.meal_date} ${m.meal_type}</option>`).join('');
+  // area chart
+  mkChart('wasteChart',{type:'line',data:{labels:(tr.data||[]).map(d=>d.date.slice(5)),datasets:[
+    {label:'Waste (kg)',data:(tr.data||[]).map(d=>d.total_waste_kg),borderColor:'#ef4444',backgroundColor:'#ef444422',fill:true,tension:.4,pointRadius:4}
+  ]},options:{...baseOpts,plugins:{...baseOpts.plugins,legend:{display:false}}}});
+  // category donut
+  const rows=Array.isArray(wl)?wl:[];
+  const catMap={};
+  rows.forEach(w=>{catMap[w.waste_category]=(catMap[w.waste_category]||0)+w.waste_kg;});
+  const catLabels=Object.keys(catMap);
+  const catVals=Object.values(catMap).map(v=>+v.toFixed(2));
+  const catColors=['#ef4444','#f59e0b','#3b82f6','#a855f7'];
+  if(catLabels.length){
+    mkChart('wasteCatChart',{type:'doughnut',data:{labels:catLabels,datasets:[{data:catVals,backgroundColor:catColors,borderWidth:2,borderColor:'#1e293b'}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{labels:{color:'#64748b',font:{size:11}},position:'bottom'}}}});
+  }
+  // table
+  document.getElementById('wasteTable').innerHTML=rows.length===0
+    ?'<div class="empty">No waste records yet.<p>Use the form above to record waste.</p></div>'
+    :`<table class="tbl"><thead><tr><th>Item</th><th>Waste (kg)</th><th>Category</th><th>Date</th></tr></thead><tbody>
+      ${rows.slice(0,25).map(w=>`<tr>
+        <td style="font-weight:500">${w.item_name}</td>
+        <td style="color:#f87171;font-weight:700">${w.waste_kg}</td>
+        <td><span class="badge info">${w.waste_category}</span></td>
+        <td style="color:#64748b">${(w.recorded_at||'').slice(0,10)}</td>
+      </tr>`).join('')}</tbody></table>`;
+}
+
+async function recordWaste(){
+  const meal_id=parseInt(document.getElementById('w-meal').value);
+  const item=document.getElementById('w-item').value.trim();
+  const kg=parseFloat(document.getElementById('w-kg').value);
+  const cat=document.getElementById('w-cat').value;
+  if(!meal_id||!item||!kg){toast('Please fill in all fields','error');return;}
+  await post('/waste',{meal_id,item_name:item,waste_kg:kg,waste_category:cat});
+  document.getElementById('w-msg').textContent='✓ Waste record saved.';
+  document.getElementById('w-item').value='';
+  document.getElementById('w-kg').value='';
+  setTimeout(()=>{document.getElementById('w-msg').textContent='';},3000);
+  toast('Waste recorded','success');
+  loadWastePage();
+}
+
+// ── Q&A ──────────────────────────────────────────────────────
+function askExample(el){
+  const q=el.textContent.trim().replace(/^[^\w]+/,'');
+  document.getElementById('qa-input').value=q;
+  sendQA();
+}
+
+function clearChat(){qaHistory=[];renderHistory();}
+
+function renderHistory(){
+  const el=document.getElementById('qa-history');
+  if(qaHistory.length===0){el.innerHTML='<div class="empty">No conversation yet.<p>Ask a question above or click one of the example chips.</p></div>';return;}
+  el.innerHTML=qaHistory.map(h=>{
+    const parts=(h.answer||'').split(/(RECOMMENDATION:[\s\S]*)/);
+    return `
+      <div class="qa-bubble user"><div class="qa-role user">🧑 You</div>${escHtml(h.question)}</div>
+      <div class="qa-bubble ai">
+        <div class="qa-role ai"><span>🤖</span> IBM Granite · <span class="badge ${h.mode}" style="font-size:10px">${h.mode}</span></div>
+        <div>${escHtml(parts[0])}</div>
+        ${parts[1]?`<div class="rec-block"><div class="rec-label">⚡ AI Recommendation (pending approval)</div>${escHtml(parts[1])}</div>`:''}
+        ${h.recommendation_created?'<div style="margin-top:8px"><span class="badge pending">⚠️ Recommendation created — check Approvals tab</span></div>':''}
+        ${h.sources?.length?`<div class="sources-row">📄 ${h.sources.map(s=>`<span class="badge info">${s}</span>`).join('')}</div>`:''}
+      </div>`;
+  }).join('');
+  el.scrollTop=el.scrollHeight;
+}
+
+async function sendQA(){
+  const q=document.getElementById('qa-input').value.trim();
+  if(!q)return;
+  const btn=document.getElementById('qa-btn');
+  document.getElementById('qa-btn-inner').innerHTML='<span class="spinner"></span>';
+  btn.disabled=true;
+  document.getElementById('qa-input').value='';
+  qaHistory.push({question:q,answer:'…thinking…',sources:[],mode:'mock',recommendation_created:false});
+  renderHistory();
+  try{
+    const r=await post('/qa',{question:q});
+    qaHistory[qaHistory.length-1]={question:q,...r};
+    renderHistory();
+    if(r.recommendation_created){updatePendingBadge();loadPendingCount();}
+  }catch(e){
+    qaHistory[qaHistory.length-1].answer='Error: '+e.message;
+    renderHistory();
+  }
+  document.getElementById('qa-btn-inner').textContent='Send ↵';
+  btn.disabled=false;
+}
+
+// ── APPROVALS ────────────────────────────────────────────────
+function filterRecs(status,el){
+  currentRecFilter=status;
+  document.querySelectorAll('#recFilterRow span').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  loadRecs(status);
+}
+
+async function loadRecs(status){
+  document.getElementById('recList').innerHTML='<div class="empty">Loading…</div>';
+  const url=status?`/recommendations?status=${status}`:'/recommendations';
+  const recs=await get(url);
+  if(!Array.isArray(recs)||recs.length===0){
+    document.getElementById('recList').innerHTML=`<div class="empty">No ${status||''} recommendations yet.<p>Ask a question on the <strong>Ask IBM Granite</strong> page to generate one.</p></div>`;
+    return;
+  }
+  document.getElementById('recList').innerHTML=recs.map(r=>`
+    <div class="rec-card ${r.status}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px">
+        <div style="font-weight:600;font-size:14px">${escHtml(r.recommendation)}</div>
+        <span class="badge ${r.status}" style="flex-shrink:0">${r.status==='pending'?'⏳':r.status==='approved'?'✅':'✕'} ${r.status}</span>
+      </div>
+      ${r.rationale?`<div style="color:#64748b;font-size:12px;line-height:1.6;margin-bottom:8px">${escHtml(r.rationale)}</div>`:''}
+      <div style="font-size:11px;color:#475569;display:flex;gap:8px;flex-wrap:wrap">
+        <span>Source: ${r.source}</span><span>·</span>
+        <span>${(r.created_at||'').slice(0,16).replace('T',' ')}</span>
+        ${r.reviewed_by?`<span>· Reviewed by <strong>${r.reviewed_by}</strong></span>`:''}
+      </div>
+      ${r.status==='pending'?`
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-success btn-sm" onclick="actRec(${r.id},'approve')">✓ Approve</button>
+        <button class="btn btn-danger btn-sm"  onclick="actRec(${r.id},'reject')">✕ Reject</button>
+      </div>`:''}
+    </div>`).join('');
+}
+
+async function actRec(id,action){
+  await post(`/recommendations/${id}/${action}`,{reviewed_by:'admin'});
+  toast(action==='approve'?'✓ Recommendation approved':'✕ Recommendation rejected',action==='approve'?'success':'');
+  loadRecs(currentRecFilter);
+  loadPendingCount();
+}
+
+async function loadPendingCount(){
+  const recs=await get('/recommendations?status=pending');
+  const n=Array.isArray(recs)?recs.length:0;
+  document.getElementById('d-pending').textContent=n;
+  updatePendingBadge(n);
+}
+
+function updatePendingBadge(n){
+  const pb=document.getElementById('pendingBadge');
+  if(n===undefined)return;
+  pb.style.display=n>0?'inline':'none';
+  pb.textContent=n;
+}
+
+// ── IMPORT ───────────────────────────────────────────────────
+function handleDrop(e){
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag');
+  const file=e.dataTransfer.files[0];
+  if(file)uploadCSV(file);
+}
+
+async function uploadCSV(file){
+  if(!file||!file.name.endsWith('.csv')){toast('Only .csv files accepted','error');return;}
+  const el=document.getElementById('import-result');
+  el.innerHTML='<div style="color:#94a3b8;font-size:13px"><span class="spinner"></span> Importing…</div>';
+  const fd=new FormData();fd.append('file',file);
+  try{
+    const r=await fetch('/api/v1/meals/import',{method:'POST',body:fd});
+    const data=await r.json();
+    el.innerHTML=`<div style="background:#14532d33;border:1px solid #166534;border-radius:8px;padding:12px 16px;color:#4ade80;font-size:13px">
+      ✓ ${data.message||'Import complete'}<br>
+      <span style="color:#64748b;font-size:11px">Rows: ${data.rows_imported} · Meals created: ${data.meals_created}</span>
+    </div>`;
+    toast('CSV imported successfully','success');
+    loadDashboard();
+  }catch(e){
+    el.innerHTML=`<div style="color:#f87171;font-size:13px">Error: ${e.message}</div>`;
+    toast('Import failed','error');
+  }
+}
+
+// ── SETTINGS ─────────────────────────────────────────────────
+function saveSettings(){
+  settings_.wasteThresh=parseInt(document.getElementById('s-thresh').value)||10;
+  settings_.refreshInterval=parseInt(document.getElementById('s-refresh').value)||60;
+  startAutoRefresh();
+  toast('Settings saved','success');
+}
+
+async function loadSysStatus(){
+  try{
+    const h=await fetch('/health').then(r=>r.json());
+    document.getElementById('sysStatus').innerHTML=`
+      <table class="tbl"><tbody>
+        <tr><td style="color:#64748b">API Status</td><td><span class="badge approved">✓ ${h.status}</span></td></tr>
+        <tr><td style="color:#64748b">AI Mode</td><td><span class="badge ${h.ai_mode}">${h.ai_mode}</span></td></tr>
+        <tr><td style="color:#64748b">Backend</td><td style="color:#4ade80">FastAPI · Python 3.12 · uvicorn</td></tr>
+        <tr><td style="color:#64748b">Database</td><td style="color:#94a3b8">SQLite (local dev)</td></tr>
+        <tr><td style="color:#64748b">Granite TTM</td><td style="color:#94a3b8">ibm/granite-ttm-512-96-r2</td></tr>
+        <tr><td style="color:#64748b">Granite Chat</td><td style="color:#94a3b8">ibm/granite-3-3-8b-instruct</td></tr>
+        <tr><td style="color:#64748b">Embeddings</td><td style="color:#94a3b8">ibm/granite-embedding-278m-multilingual</td></tr>
+      </tbody></table>`;
+  }catch(e){document.getElementById('sysStatus').innerHTML='<div class="empty">Could not reach backend</div>';}
+}
+
+// ── Utils ─────────────────────────────────────────────────────
+function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ── Keyboard shortcut: / → focus Q&A ─────────────────────────
+document.addEventListener('keydown',e=>{
+  if(e.key==='/'&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA'){
+    e.preventDefault();show('qa');
+    setTimeout(()=>document.getElementById('qa-input').focus(),100);
+  }
+});
+
+// ── Init ─────────────────────────────────────────────────────
+loadDashboard();
+renderHistory();
+startAutoRefresh();
+</script>
+</body>
+</html>

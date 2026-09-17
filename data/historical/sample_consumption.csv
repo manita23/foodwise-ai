@@ -1,0 +1,14 @@
+date,meal_type,item_name,consumption_kg,headcount
+2024-01-01,lunch,rice,45.2,210
+2024-01-01,lunch,dal,22.1,210
+2024-01-01,lunch,vegetable_curry,18.5,210
+2024-01-01,dinner,chapati,30.0,195
+2024-01-01,dinner,paneer_curry,20.3,195
+2024-01-02,breakfast,idli,28.4,180
+2024-01-02,breakfast,sambar,14.2,180
+2024-01-02,lunch,rice,42.8,205
+2024-01-02,lunch,dal,21.0,205
+2024-01-02,dinner,chapati,28.5,190
+2024-01-03,lunch,rice,44.1,208
+2024-01-03,lunch,rajma,23.0,208
+2024-01-03,dinner,chapati,29.8,188
