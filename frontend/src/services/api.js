@@ -1,4 +1,4 @@
-const BASE = const BASE = 'https://foodwise-ai-backend.onrender.com/api/v1'
+const BASE = 'https://foodwise-ai-backend.onrender.com/api/v1'
 
 async function get(path) {
   const r = await fetch(`${BASE}${path}`)
