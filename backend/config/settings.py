@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     # App
     jwt_secret: str = "dev-secret-change-in-prod"
-    allowed_origins: str = "http://localhost:5173"
+    allowed_origins: str = "http://localhost:5173,https://foodwise-ai-beta.vercel.app"
 
     # Vector store
     vector_store_backend: str = "chroma"
