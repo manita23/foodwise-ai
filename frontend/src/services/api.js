@@ -17,7 +17,11 @@ async function post(path, body) {
 }
 
 export const api = {
-  health: ()                      => get('/health'.replace('/api/v1', '')),
+  health: () => fetch(`${BASE.replace('/api/v1', '')}/health`).then(async r => {
+  if (!r.ok) throw new Error(`GET /health → ${r.status}`)
+  return r.json()
+}),
+  
   forecast: (body)                => post('/forecast', body),
   qa: (question)                  => post('/qa', { question }),
   listWaste: (days = 30)          => get(`/waste?days=${days}`),
